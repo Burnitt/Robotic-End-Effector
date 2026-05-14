@@ -1,0 +1,366 @@
+import bcrypt
+
+import random
+
+from time import sleep
+
+def sign_up():
+
+    """This function takes no parameters, and prompts the user to enter their userID until they enter a ID that is not in the file. The program then prompts the user to enter a password until a valid password is entered. Then their userID, and a hashed version of their password is saved in the file.
+
+    This function was done by: Gurnit Chopra"""
+
+    previous_userids = []
+    filename = "users.csv"
+    pword_input = id_input = upper_case = lower_case = digit = symbol = False
+    symbols = "!.@#$%^&*()_[]?" # the set of symbols that the user has to incorporate in their password
+
+    print("\n--------Create Account---------\n")
+
+    try:
+        with open(filename) as file: # opens the file
+            for line in file: # Reads through each line of the file
+                temp = line.split(",") # Splits the elements by the comma inbetween them
+
+                if len(line) > 0: # checks if there is something in the line
+                    previous_userids.append(temp[0]) # assigns all of the user IDs to the new list
+
+    except FileNotFoundError: # If the file could not be found, it then creates the file
+
+        with open(filename) as file:
+            pass
+        print("There existed no users.csv file, but one has now been created!")
+
+    while id_input == False: # while the user has entered a invalid userID
+        counter = 0
+        userid_input = input("Enter your userID: ")
+
+        for p_userid in previous_userids: # runs through each of the previous userID's and checks if what the user enetered is in that list
+
+            if p_userid == userid_input:
+                print("This userID is already taken!")
+                counter += 1
+
+        if counter >= 1:
+            id_input = False
+
+        elif counter == 0:
+            id_input = True
+
+    while pword_input == False: # while the user has enetered a invalid password
+
+        print("\n-------------------Password Criteria----------------------------\n")
+        print("Enter a password longer than 6 characters")
+        print("Enter a password that consists of a upper case character")
+        print("Enter a password that consists of a lower case character")
+        print("Enter a password that consists of a numerical digit!")
+        print("Enter a password that consists of a symbol!\n")
+
+        user_password = input("Enter a password: ")
+
+        for character in user_password: # goes through each character of the password that the user entered and checks if it staisfies it being either uppercase, lowercase, being a digit, or being a symbol from the list above
+
+            if character.isupper() == True:
+                upper_case = True
+
+            if character.islower() == True:
+                lower_case = True
+
+            if character.isnumeric() == True:
+                digit = True
+
+            for symchar in symbols:
+
+                if character == symchar:
+                    symbol = True
+
+        if (len(user_password) >= 6 and upper_case == True and lower_case == True and digit == True and symbol == True): # if the users password satifies all the requirements of a valid password
+            pword_input = True
+
+        # These set of if statements checks if the password that the user enetered consists of less than 6 characters, no upper case or lower case letter, a digit or a symbol, it then prompts the user their mistake
+
+        if len(user_password) < 6:
+            print("Enter a password longer than 6 characters!")
+
+        if upper_case == False:
+            print("Enter a password that consists of a upper case character!")
+
+        if lower_case == False:
+            print("Enter a password that consists of a lower case character!")
+
+        if digit == False:
+            print("Enter a password that consists of a numerical digit!")
+
+        if symbol == False:
+            print("Enter a password that consists of a symbol!")
+
+    hash = bcrypt.hashpw(user_password.encode('utf-8'), bcrypt.gensalt() ).decode('utf-8') # hashes the users' valid password
+
+    try:
+        with open(filename, "a") as file:
+
+            file.write(userid_input + "," + hash + "\n") # writes to the file, the userID and their hashed password separated by a comma
+
+        print("Authenticating user...")
+
+        sleep(1)
+
+        print("Authenticating user..")
+
+        sleep(1)
+
+        print("\nSuccessfully created account!\n")
+
+    except PermissionError: # Would get caught if the user can't access the file (most likely due to the file being open on the side)
+        print("Error, do you have the users.csv file open somewhere else?")
+
+def main():
+
+    """
+    Runs the entire ordering system:
+
+      - Authenticates the user (or signs them up if needed)
+      - Allows the user to scan products
+      - Looks up product prices, completes orders, and prints receipts
+      - Allows user to make multiple orders
+      - Prints a final customer summary at the end
+
+    This function coordinates all other components of the ordering system by calling all of the the necessary functions
+
+    This function was done by: Team
+    """
+
+    print("----- Welcome to Ordering System -----")
+
+
+    # Log the user in (or sign them up if they do not have an account)
+    userid= authenticate()
+    print(f"Logged in as: {userid}")
+
+
+    while True: # Loop to allow the user to place multiple orders in one session
+
+        print("Scan products for a new order")
+
+
+        # Read the scanned product string from the barcode scanner
+        scanned_products_str = scan_barcode()
+        print(f"Scanned items: {scanned_products_str}")
+
+
+        scanned_products_price =lookup_products(scanned_products_str)  # Lookup product names and their corresponding prices
+
+
+        print("Product list with prices:")
+        for name, price in scanned_products_price:  # displays the products and prices to the user
+            print(f" {name}: ${price:.2f}")
+
+        order_list = []
+        for name, price in scanned_products_price: # converts the list from lookup products into a 2D order list with the product name, then price, for each item
+            order_list.append([name, price])
+
+
+        #pack_products(order_list) # Pack the products using the Q-arm
+
+
+        complete_order(userid, order_list ) # Completes the order and prints the receipt
+
+
+        # Ask if user wants to place another order
+        again = input("Would you like to place another order? (yes/no): ").strip().lower()
+
+        if again != "yes":
+            break  # Exit the while loop
+
+
+    # Print a final summary of all orders placed by this user
+    customer_summary(userid)
+
+
+    print("------ Thank you for Ordering !!!! ------")
+
+
+def sponge():
+    """This function is the guide for the q-arm to pick up the sponge and bring it to the drop box and output to the user that the sponge has been packed.
+
+    This function was done by: Team."""
+
+    arm.rotate_base(-2) # aligns itself with the sponge
+    sleep(1)
+
+    arm.set_arm_position([0.5738982662177072, 0.15743862479559878, 0.09944466639331564]) # Goes to the sponge position
+    sleep(1)
+
+    arm.rotate_gripper(180) # Closes the gripper (clamps the item)
+    sleep(1)
+    arm.rotate_elbow(-30) # rotates the arm up in order to avoid hitting objects in the way
+    sleep(1)
+
+    arm.set_arm_position([0.18979054455766792, -0.3173793004837362, 0.26387376367500665]) # goes to the drop box position
+    sleep(1)
+
+    arm.rotate_gripper(-45) #opens the gripper to release the object
+    sleep(1)
+    print("Sponge has been packed!")
+
+def bottle():
+
+    """This function is the guide for the q-arm to pick up the bottle and bring it to the drop box and output to the user that the bottle has been packed.
+
+    This function was done by: Team."""
+
+    arm.rotate_base(-1) # aligns itself with the bottle
+    sleep(1)
+
+    arm.set_arm_position([0.603889673157745, 0.08439876809693939, 0.11711224137045179]) # Goes to the bottle position
+    sleep(1)
+
+    arm.rotate_gripper(180) # Closes the gripper (clamps the item)
+    sleep(1)
+    arm.rotate_elbow(-30) # Rotates the arm up in order to avoid hitting objects in the way
+    sleep(1)
+
+    arm.set_position([0.18979054455766792, -0.3173793004837362, 0.26387376367500665]) # goes to the drop box position
+    sleep(1)
+
+    arm.rotate_gripper(-45) #opens the gripper to release the object
+    sleep(1)
+    print("Bottle has been packed!")
+
+def rook():
+    """This function is the guide for the q-arm to pick up the rook and bring it to the drop box and output to the user that the rook has been packed.
+
+    This function was done by: Team."""
+
+    arm.rotate_base(2) # aligns itself with the rook
+    sleep(1)
+
+    arm.set_position([0.5911439372738108, 0.01678446857857702, 0.052937878438266694]) # Goes to the rook
+    sleep(1)
+
+    arm.rotate_gripper(180) # Closes the gripper (clamps the item)
+    sleep(1)
+    arm.rotate_elbow(-30) # Rotates the arm up in order to avoid hitting objects in the way
+    sleep(1)
+
+    arm.set_position([0.18979054455766792, -0.3173793004837362, 0.26387376367500665]) # goes to the drop box position
+    sleep(1)
+
+    arm.rotate_gripper(-45) #opens the gripper to release the object
+    sleep(1)
+    print("Rook has been packed!")
+
+def d12():
+    """This function is the guide for the q-arm to pick up the d12 and bring it to the drop box and output to the user that the d12 has been packed.
+
+    This function was done by: Team."""
+
+    arm.rotate_base(3) # alings itself with the d12
+    sleep(1)
+
+    arm.set_position([0.6017113834020855, -0.03280744043874341, 0.0659842280292641])  # Goes to the d12
+    sleep(1)
+
+    arm.rotate_gripper(180) # Closes the gripper (clamps the item)
+    sleep(1)
+    arm.rotate_elbow(-30) # Rotates the arm up in order to avoid hitting objects in the way
+    sleep(1)
+
+    arm.set_position([0.18979054455766792, -0.3173793004837362, 0.26387376367500665]) # goes to the drop box position
+    sleep(1)
+
+    arm.rotate_gripper(-45) #opens the gripper to release the object
+    sleep(1)
+    print("d12 has been packed!")
+
+def witchHat():
+    """This function is the guide for the q-arm to pick up the witch hat and bring it to the drop box and output to the user that the witch hat has been packed.
+
+    This function was done by: Team."""
+
+    arm.rotate_base(5) # aligns itself with the witch hat
+    sleep(1)
+
+    arm.set_position([0.5913819533576008, -0.11248303136361129, 0.038436410892180445]) #Goes to the witch hat
+    sleep(1)
+
+    arm.rotate_gripper(180) # Closes the gripper (clamps the item)
+    sleep(1)
+    arm.rotate_elbow(-30) # Rotates the arm up in order to avoid hitting objects in the way
+    sleep(1)
+
+    arm.set_position([0.18979054455766792, -0.3173793004837362, 0.26387376367500665]) # goes to the drop box position
+    sleep(1)
+
+    arm.rotate_gripper(-45) #opens the gripper to release the object
+    sleep(1)
+    print("Witch Hat has been packed!")
+
+def bowl():
+    """This function is the guide for the q-arm to pick up the bowl and bring it to the drop box and output to the user that the bowl has been packed.
+
+    This function was done by: Team."""
+
+    arm.rotate_base(6) # aligns itself with the bowl
+    sleep(1)
+
+    arm.set_position([0.5841038305383393, -0.17870096857920106, 0.05034593933181705])  #Goes to the bowl
+    sleep(1)
+
+    arm.rotate_gripper(180) # Closes the gripper (clamps the item)
+    sleep(1)
+    arm.rotate_elbow(-30) # rotates the arm up in order to avoid hitting objects in the way
+    sleep(1)
+
+    arm.set_position([0.18979054455766792, -0.3173793004837362, 0.26387376367500665]) # goes to the drop box position
+    sleep(1)
+
+    arm.rotate_gripper(-45) # opens the gripper to release the object
+    sleep(1)
+    print("Bowl has been packed!")
+
+def pack_products(product_list):
+
+    """This function takes the product_list as a parameter and then the program checks if there is an invalid item in the parameter, if not, it iterates through the list of items and goes to the item, picks it up, and drops it off at the drop box, and outputs to the user that the item has been packed.
+
+    This function was done by: Team."""
+
+    counter = 0
+    items = ["Sponge", "Bottle", "Rook", "D12", "WitchHat", "Bowl"] # list of the valid items
+
+    for i in range (len(product_list)): # iterates through the product_list to check if any of the items are invalid
+        if not product_list[i][0] in items:
+            print("Invalid input!")
+            counter = 1
+            break
+
+    if counter == 0: # if all of the items in the product_list are valid
+        for i in range (len(product_list)): # iterates through all of the items in the product list
+
+            arm.home() # Brings it back home
+
+            arm.rotate_gripper(180) # closes the gripper fully
+            sleep(1)
+
+            arm.rotate_gripper(-80) #Opens the end effector
+            sleep(1)
+
+            if product_list[i][0] == items[0]: # Checks if the product is a sponge
+                sponge()
+
+            elif product_list[i][0] == items[1]: # Checks if the product is a bottle
+                bottle()
+
+            elif product_list[i][0] == items[2]: # Checks if the product is a rook
+                rook()
+
+            elif product_list[i][0] == items[3]: # Checks if the product is a D12
+                d12()
+
+            elif product_list[i][0] == items[4]: # Checks if the product is a WitchHat
+                witchHat()
+
+            elif product_list[i][0] == items[5]: # Checks if the product is a bowl
+                bowl()
+
+main()
