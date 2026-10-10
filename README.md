@@ -71,7 +71,6 @@ Sliders (×2), 92000A126 Passivated 18-8 SS Pan Head Screws (×4)
 ![Main gear drawing](https://github.com/user-attachments/assets/4d70d485-f4b5-4c60-a6ab-be5ea6e78073)
 ![Assembly exploded view](https://github.com/user-attachments/assets/76511377-a703-48fd-b4f2-13b9e447628a)
 
-> Demo video available on my [portfolio](https://bush-aurora-6f7.notion.site/Robotic-End-Effector-2da3afb3d1d581e6ac3df6b699bbd96e)
 
 ---
 
